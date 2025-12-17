@@ -5,3 +5,4 @@ cloudinary
 azure-storage-blob
 databricks-sdk
 python-dotenv
+azure-storage-file-datalake

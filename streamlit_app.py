@@ -4,6 +4,10 @@ import streamlit as st
 from PyPDF2 import PdfReader
 from databricks.databricks_trigger import run_job_and_get_gdrive_link
 from databricks.payload import payload_setter
+from dotenv import load_dotenv
+
+load_dotenv()
+
 
 
 # ======================================================
@@ -262,17 +266,15 @@ with st.sidebar:
 # ======================================================
 import cloudinary
 import cloudinary.uploader
-import cloudinary.api
 import os
 import asyncio
+import streamlit as st
+from PyPDF2 import PdfReader
+from azure.storage.filedatalake import DataLakeServiceClient
 
-
-# Import the CloudinaryImage and CloudinaryVideo methods for the simplified syntax used in this guide
-from cloudinary import CloudinaryImage
-from cloudinary import CloudinaryVideo
-
-print()
-
+# ------------------------------------------------------
+# Cloudinary config
+# ------------------------------------------------------
 cloudinary.config(
     cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
     api_key=os.getenv("CLOUDINARY_API_KEY"),
@@ -280,14 +282,9 @@ cloudinary.config(
     secure=True
 )
 
-def upload_image_to_cloudinary(file):
-    result = cloudinary.uploader.upload(
-        file,
-        resource_type="image"
-    )
-    return result["secure_url"]
-
-
+# ------------------------------------------------------
+# Async Cloudinary upload
+# ------------------------------------------------------
 async def upload_image_to_cloudinary_async(file):
     result = await asyncio.to_thread(
         cloudinary.uploader.upload,
@@ -296,40 +293,144 @@ async def upload_image_to_cloudinary_async(file):
     )
     return result["secure_url"]
 
+from azure.storage.filedatalake import DataLakeServiceClient
+import os
 
-# # Example usage
-# url, public_id = upload_image_and_get_url("sample.jpg")
-# print("Image URL:", url)
-# print("Public ID:", public_id)
+def upload_to_adls(uploaded_file, adls_path):
+    account_name = os.getenv("AZURE_STORAGE_ACCOUNT")
+    account_key = os.getenv("ACCOUNT_KEY")
+    file_system = os.getenv("AZURE_BLOB_CONTAINER")
+
+    if not all([account_name, account_key, file_system]):
+        raise RuntimeError(
+            f"Missing ADLS config. "
+            f"AZURE_STORAGE_ACCOUNT={account_name}, "
+            f"ACCOUNT_KEY={'SET' if account_key else None}, "
+            f"ADLS_FILE_SYSTEM={file_system}"
+        )
+
+    service_client = DataLakeServiceClient(
+        account_url=f"https://{account_name}.dfs.core.windows.net",
+        credential=account_key
+    )
+
+    fs_client = service_client.get_file_system_client(file_system)
+    file_client = fs_client.get_file_client(adls_path)
+
+    uploaded_file.seek(0)
+    file_client.upload_data(uploaded_file.read(), overwrite=True)
+
+    # Return HTTPS blob URL (for downstream LLM)
+    return f"https://{account_name}.blob.core.windows.net/{file_system}/{adls_path}"
 
 
+# def upload_to_adls(uploaded_file, adls_path):
+#     account_name = os.getenv("AZURE_STORAGE_ACCOUNT")
+#     account_key = os.getenv("ACCOUNT_KEY")
+#     file_system = os.getenv("ADLS_FILE_SYSTEM")
+
+#     service_client = DataLakeServiceClient(
+#         account_url=f"https://{account_name}.dfs.core.windows.net",
+#         credential=account_key
+#     )
+
+#     fs_client = service_client.get_file_system_client(file_system)
+#     file_client = fs_client.get_file_client(adls_path)
+
+#     uploaded_file.seek(0)
+#     file_client.upload_data(uploaded_file.read(), overwrite=True)
+
+#     # ✅ RETURN BLOB HTTPS URL
+#     return f"https://{account_name}.blob.core.windows.net/{file_system}/{adls_path}"
+
+
+# ------------------------------------------------------
+# UI
+# ------------------------------------------------------
 st.header("Upload Artifacts")
-st.error("Upload PNG, JPG, JPEG, or PDF files.")
+st.info("Upload PNG, JPG, JPEG, or PDF files.")
 
 uploaded_files = st.file_uploader(
-    "Select files", accept_multiple_files=True,
+    "Select files",
+    accept_multiple_files=True,
     type=["png", "jpg", "jpeg", "pdf"]
 )
 
-extracted_text = ""
-image_url = None
-if uploaded_files:
-    for file in uploaded_files:
-        if file.name.lower().endswith("pdf"):
-            reader = PdfReader(file)
-            for page in reader.pages:
-                extracted_text += (page.extract_text() or "") + "\n"
-        else:
-            # extracted_text += f"[IMAGE: {file.name}]\n"
-            # image_url = asyncio.run(
-            #     upload_image_to_cloudinary_async(file)
-            # )
-            image_url = upload_image_to_cloudinary(file)
+# Session state to prevent re-upload
+if "image_urls" not in st.session_state:
+    st.session_state.image_urls = []
 
-            st.image(image_url, width=200)
-            st.success("Image uploaded successfully!")
+if "pdf_urls" not in st.session_state:
+    st.session_state.pdf_urls = []
 
-st.write("Image URL:", image_url)
+if "extracted_text" not in st.session_state:
+    st.session_state.extracted_text = ""
+
+# ------------------------------------------------------
+# Upload Button (IMPORTANT)
+# ------------------------------------------------------
+# adls_url = []
+# image_url = []
+
+if "image_urls" not in st.session_state:
+    st.session_state.image_urls = []
+
+if "pdf_urls" not in st.session_state:
+    st.session_state.adls_urls = []
+
+if st.button("Upload Files"):
+    if not uploaded_files:
+        st.warning("Please select files first.")
+    else:
+        with st.spinner("Uploading..."):
+            for file in uploaded_files:
+                if file.name.lower().endswith(".pdf"):
+                    adls_path = f"uploads/pdfs/{file.name}"
+                    pdf_url = upload_to_adls(file, adls_path)
+
+                    st.session_state.pdf_urls.append(pdf_url)
+
+                    st.success("PDF uploaded to ADLS ✅")
+                    st.code(pdf_url)
+
+                else:
+                    img_url = asyncio.run(
+                        upload_image_to_cloudinary_async(file)
+                    )
+
+                    st.session_state.image_urls.append(img_url)
+
+                    st.success("Image uploaded successfully!")
+                    st.image(img_url, width=200)
+
+
+# if st.button("Upload Files"):
+#     if not uploaded_files:
+#         st.warning("Please select files first.")
+#     else:
+#         with st.spinner("Uploading..."):
+#             for file in uploaded_files:
+#                 if file.name.lower().endswith(".pdf"):
+#                     reader = PdfReader(file)
+#                     for page in reader.pages:
+#                         st.session_state.extracted_text += (page.extract_text() or "") + "\n"
+
+#                     adls_path = f"uploads/pdfs/{file.name}"
+#                     adls_url.append(upload_to_adls(file, adls_path))
+#                     st.session_state.pdf_urls.append(adls_url)
+
+#                     st.success("PDF uploaded to ADLS ✅")
+#                     st.code(adls_url)
+
+#                 else:
+#                     image_url.append(asyncio.run(
+#                         upload_image_to_cloudinary_async(file)
+#                     ))
+#                     st.session_state.image_urls.append(image_url)
+
+#                     st.success("Image uploaded successfully!")
+#                     st.image(image_url, width=200)
+
 # ======================================================
 # AI ANALYSIS
 # ======================================================
@@ -365,13 +466,23 @@ col1, col2 = st.columns([3, 1])
 with col1:
     if st.button("Generate Cost Estimate with AI", type="primary", use_container_width=True):
         with st.spinner("Analyzing and estimating..."):
+            # payload = payload_setter(
+            #     image_url,
+            #     adls_url,
+            #     client_name,
+            #     use_case_name,
+            #     markets,
+            #     prompt_input,
+            #     annual_budget
+            # )
             payload = payload_setter(
-                image_url,
-                client_name,
-                use_case_name,
-                markets,
-                prompt_input,
-                annual_budget
+                image_uris=st.session_state.image_urls,
+                file_uris=st.session_state.pdf_urls,
+                client_name=client_name,
+                use_case_name=use_case_name,
+                markets=markets,
+                user_prompt=prompt_input,
+                budget=annual_budget
             )
 
             try:
