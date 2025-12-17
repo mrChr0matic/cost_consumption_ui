@@ -2,7 +2,7 @@ import json
 from typing import List
 
 
-def tester(
+def payload_setter(
     image_uri: str,
     client_name: str,
     use_case_name: str,

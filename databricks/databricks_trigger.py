@@ -2,22 +2,36 @@ import os
 import json
 import time
 import requests
-from dotenv import load_dotenv
 from azure.storage.blob import BlobServiceClient
+from databricks.sdk.runtime import dbutils
 
-load_dotenv()
 
 # ------------------------------------------------------------
 # ENV
 # ------------------------------------------------------------
-DATABRICKS_WORKSPACE_URL = os.getenv("DATABRICKS_WORKSPACE_URL")
-DATABRICKS_TOKEN = os.getenv("DATABRICKS_TOKEN")
-DATABRICKS_JOB_ID = os.getenv("DATABRICKS_JOB_ID")
+DATABRICKS_WORKSPACE_URL = dbutils.secrets.get(
+    "llm-secrets", "DATABRICKS_WORKSPACE_URL"
+)
+DATABRICKS_TOKEN = dbutils.secrets.get(
+    "llm-secrets", "DATABRICKS_TOKEN"
+)
+DATABRICKS_JOB_ID = dbutils.secrets.get(
+    "llm-secrets", "DATABRICKS_JOB_ID"
+)
 
-AZURE_STORAGE_ACCOUNT = os.getenv("AZURE_STORAGE_ACCOUNT")
-AZURE_BLOB_CONTAINER = os.getenv("AZURE_BLOB_CONTAINER", "finops-output")
-AZURE_BLOB_SAS_TOKEN = os.getenv("AZURE_BLOB_SAS_TOKEN")
-
+AZURE_STORAGE_ACCOUNT = dbutils.secrets.get(
+    "llm-secrets", "AZURE_STORAGE_ACCOUNT"
+)
+AZURE_BLOB_CONTAINER = dbutils.secrets.get(
+    "llm-secrets", "AZURE_BLOB_CONTAINER"
+)
+AZURE_BLOB_SAS_TOKEN = dbutils.secrets.get(
+    "llm-secrets", "AZURE_BLOB_SAS_TOKEN"
+)
+CONN_STR = dbutils.secrets.get(
+    "llm-secrets",
+    "AZURE_STORAGE_CONNECTION_STRING"
+)
 if not all([
     DATABRICKS_WORKSPACE_URL,
     DATABRICKS_TOKEN,
@@ -101,7 +115,7 @@ def fetch_drive_link_from_adls(payload: dict, timeout: int = 300) -> str:
     Works with private storage accounts.
     """
 
-    connect_str = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
+    connect_str = CONN_STR
     if not connect_str:
         raise RuntimeError("AZURE_STORAGE_CONNECTION_STRING not set")
 

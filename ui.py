@@ -2,11 +2,10 @@ import os
 import base64
 import streamlit as st
 from PyPDF2 import PdfReader
-from dotenv import load_dotenv
 from databricks.databricks_trigger import run_job_and_get_gdrive_link
-from databricks.tester import tester
+from databricks.payload import payload_setter
+from databricks.sdk.runtime import dbutils
 
-load_dotenv()
 
 # ======================================================
 # PAGE CONFIG
@@ -276,10 +275,10 @@ from cloudinary import CloudinaryVideo
 print()
 
 cloudinary.config(
-    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
-    api_key=os.getenv("CLOUDINARY_API_KEY"),
-    api_secret=os.getenv("CLOUDINARY_API_SECRET"),
-    secure = True
+    cloud_name=dbutils.secrets.get("llm-secrets", "CLOUDINARY_CLOUD_NAME"),
+    api_key=dbutils.secrets.get("llm-secrets", "CLOUDINARY_API_KEY"),
+    api_secret=dbutils.secrets.get("llm-secrets", "CLOUDINARY_API_SECRET"),
+    secure=True
 )
 
 
@@ -359,7 +358,7 @@ col1, col2 = st.columns([3, 1])
 with col1:
     if st.button("Generate Cost Estimate with AI", type="primary", use_container_width=True):
         with st.spinner("Analyzing and estimating..."):
-            payload = tester(
+            payload = payload_setter(
                 image_url,
                 client_name,
                 use_case_name,

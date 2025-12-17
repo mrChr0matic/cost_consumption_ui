@@ -1,0 +1,7 @@
+streamlit
+requests
+PyPDF2
+cloudinary
+azure-storage-blob
+databricks-sdk
+python-dotenv
