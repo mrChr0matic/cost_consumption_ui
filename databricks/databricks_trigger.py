@@ -3,41 +3,35 @@ import json
 import time
 import requests
 from azure.storage.blob import BlobServiceClient
-from databricks.sdk.runtime import dbutils
+# from databricks.sdk.runtime import dbutils
 
 
 # ------------------------------------------------------------
 # ENV
 # ------------------------------------------------------------
-DATABRICKS_WORKSPACE_URL = dbutils.secrets.get(
-    "llm-secrets", "DATABRICKS_WORKSPACE_URL"
-)
-DATABRICKS_TOKEN = dbutils.secrets.get(
-    "llm-secrets", "DATABRICKS_TOKEN"
-)
-DATABRICKS_JOB_ID = dbutils.secrets.get(
-    "llm-secrets", "DATABRICKS_JOB_ID"
-)
 
-AZURE_STORAGE_ACCOUNT = dbutils.secrets.get(
-    "llm-secrets", "AZURE_STORAGE_ACCOUNT"
-)
-AZURE_BLOB_CONTAINER = dbutils.secrets.get(
-    "llm-secrets", "AZURE_BLOB_CONTAINER"
-)
-AZURE_BLOB_SAS_TOKEN = dbutils.secrets.get(
-    "llm-secrets", "AZURE_BLOB_SAS_TOKEN"
-)
-CONN_STR = dbutils.secrets.get(
-    "llm-secrets",
-    "AZURE_STORAGE_CONNECTION_STRING"
-)
+def require_env(name: str) -> str:
+    value = os.getenv(name)
+    if not value:
+        raise RuntimeError(f"Missing environment variable: {name}")
+    return value
+
+
+DATABRICKS_WORKSPACE_URL = require_env("DATABRICKS_WORKSPACE_URL")
+DATABRICKS_TOKEN = require_env("DATABRICKS_TOKEN")
+DATABRICKS_JOB_ID = require_env("DATABRICKS_JOB_ID")
+
+AZURE_STORAGE_ACCOUNT = require_env("AZURE_STORAGE_ACCOUNT")
+AZURE_BLOB_CONTAINER = require_env("AZURE_BLOB_CONTAINER")
+
+CONN_STR = require_env("AZURE_STORAGE_CONNECTION_STRING")
+
 if not all([
     DATABRICKS_WORKSPACE_URL,
     DATABRICKS_TOKEN,
     DATABRICKS_JOB_ID,
     AZURE_STORAGE_ACCOUNT,
-    AZURE_BLOB_SAS_TOKEN,
+    # AZURE_BLOB_SAS_TOKEN,
 ]):
     raise RuntimeError("❌ Missing required environment variables")
 

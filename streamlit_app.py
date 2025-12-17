@@ -4,7 +4,6 @@ import streamlit as st
 from PyPDF2 import PdfReader
 from databricks.databricks_trigger import run_job_and_get_gdrive_link
 from databricks.payload import payload_setter
-from databricks.sdk.runtime import dbutils
 
 
 # ======================================================
@@ -275,11 +274,18 @@ from cloudinary import CloudinaryVideo
 print()
 
 cloudinary.config(
-    cloud_name=dbutils.secrets.get("llm-secrets", "CLOUDINARY_CLOUD_NAME"),
-    api_key=dbutils.secrets.get("llm-secrets", "CLOUDINARY_API_KEY"),
-    api_secret=dbutils.secrets.get("llm-secrets", "CLOUDINARY_API_SECRET"),
+    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
+    api_key=os.getenv("CLOUDINARY_API_KEY"),
+    api_secret=os.getenv("CLOUDINARY_API_SECRET"),
     secure=True
 )
+
+def upload_image_to_cloudinary(file):
+    result = cloudinary.uploader.upload(
+        file,
+        resource_type="image"
+    )
+    return result["secure_url"]
 
 
 async def upload_image_to_cloudinary_async(file):
@@ -315,9 +321,10 @@ if uploaded_files:
                 extracted_text += (page.extract_text() or "") + "\n"
         else:
             # extracted_text += f"[IMAGE: {file.name}]\n"
-            image_url = asyncio.run(
-                upload_image_to_cloudinary_async(file)
-            )
+            # image_url = asyncio.run(
+            #     upload_image_to_cloudinary_async(file)
+            # )
+            image_url = upload_image_to_cloudinary(file)
 
             st.image(image_url, width=200)
             st.success("Image uploaded successfully!")
