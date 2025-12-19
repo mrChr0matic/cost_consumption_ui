@@ -1,3 +1,7 @@
+
+
+
+
 import os
 import base64
 import streamlit as st
@@ -19,6 +23,25 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+
+
+st.markdown(
+        """
+            <style>
+                    div.stButton > button {
+                                background-color: #D7263D !important;
+                                            color: #ffffff !important;
+                                                        border: none !important;
+                                                                }
+                                                                    </style>
+                                                                        """,
+                                                                            unsafe_allow_html=True
+                                                                            )
+
+
+
+
+
 # ======================================================
 # PLACEHOLDER LLM FUNCTION
 # ======================================================
@@ -26,10 +49,6 @@ def query_llm(prompt):
     if "connection success" in prompt.lower():
         return "Connection success"
     return {"resources": [], "assumptions": []}
-# def query_llm(prompt):
-#     return {
-#         "gdrive_link": "https://drive.google.com"
-#     }
 
 # ======================================================
 # BACKEND STATE INITIALIZATION
@@ -42,6 +61,10 @@ if "ml_store" not in st.session_state:
 
 if "reporting_store" not in st.session_state:
     st.session_state.reporting_store = {}
+
+if "llm_store" not in st.session_state:
+        st.session_state.llm_store = {}
+
 
 if "final_prompt" not in st.session_state:
     st.session_state.final_prompt = ""
@@ -70,16 +93,6 @@ def get_base64_image(path):
 
 logo_base64 = get_base64_image("./assets/sigmoid-logo.jpeg")
 
-st.markdown(
-    f"""
-    <div class="fixed-branding">
-        <img src="data:image/jpeg;base64,{logo_base64}">
-        <div class="brand-text">Powered by <b>Databricks</b></div>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
 # ======================================================
 # HERO
 # ======================================================
@@ -99,6 +112,19 @@ st.markdown("---")
 # SIDEBAR
 # ======================================================
 with st.sidebar:
+    logo_base64 = get_base64_image("./assets/sigmoid-logo.jpeg")
+
+    st.markdown(
+        f"""
+        <div class="sidebar-logo">
+            <img src="data:image/png;base64,{logo_base64}" class="sidebar-logo">
+            <p class="sidebar-text">Powered by <span class="db-red">Databricks</span></p>
+        </div>
+        <hr class="sidebar-divider">
+        """,
+        unsafe_allow_html=True
+    )
+
     st.header("User Input")
 
     client_name = st.text_input(
@@ -146,7 +172,7 @@ with st.sidebar:
 
     use_case_type = st.selectbox(
         "Use Case Type",
-        ["Select use case", "Data Migration", "Machine Learning", "Reporting"]
+        ["Select use case", "Data Migration", "Machine Learning", "Reporting", "LLM"]
     )
 
     cloud_options = ["Databricks", "AWS", "Azure"]
@@ -260,6 +286,35 @@ with st.sidebar:
         rp["number_of_users"] = st.number_input(
             "Number of Users", min_value=0, value=0
         )
+    if use_case_type == "LLM":
+            llm = st.session_state.llm_store
+            st.subheader("LLM Inputs")
+            llm["cloud_type"] = st.multiselect("Cloud Type", cloud_options, default=[])
+            llm["llm_category"] = st.selectbox(
+                "LLM Type",
+                [
+                    "Generative AI",
+                    "Embedding / Vector Search",
+                    "Fine-tuning",
+                    "RAG (Retrieval Augmented Generation)"
+                ]
+            )
+            llm["llm_model"] = st.selectbox(
+                "LLM Model Version",
+                [
+                    "GPT-4.1",
+                    "GPT-4o",
+                     "GPT-4.0"
+                ]
+                                                                                
+            )
+            llm["requests_per_day"] = st.number_input(
+                        "Requests per Day", min_value=0, value=0
+                            )
+            
+                
+     
+                                                                                                                                                                                                                                                
 
 # ======================================================
 # UPLOAD ARTIFACTS
@@ -323,27 +378,6 @@ def upload_to_adls(uploaded_file, adls_path):
     # Return HTTPS blob URL (for downstream LLM)
     return f"https://{account_name}.blob.core.windows.net/{file_system}/{adls_path}"
 
-
-# def upload_to_adls(uploaded_file, adls_path):
-#     account_name = os.getenv("AZURE_STORAGE_ACCOUNT")
-#     account_key = os.getenv("ACCOUNT_KEY")
-#     file_system = os.getenv("ADLS_FILE_SYSTEM")
-
-#     service_client = DataLakeServiceClient(
-#         account_url=f"https://{account_name}.dfs.core.windows.net",
-#         credential=account_key
-#     )
-
-#     fs_client = service_client.get_file_system_client(file_system)
-#     file_client = fs_client.get_file_client(adls_path)
-
-#     uploaded_file.seek(0)
-#     file_client.upload_data(uploaded_file.read(), overwrite=True)
-
-#     # ✅ RETURN BLOB HTTPS URL
-#     return f"https://{account_name}.blob.core.windows.net/{file_system}/{adls_path}"
-
-
 # ------------------------------------------------------
 # UI
 # ------------------------------------------------------
@@ -369,8 +403,8 @@ if "extracted_text" not in st.session_state:
 # ------------------------------------------------------
 # Upload Button (IMPORTANT)
 # ------------------------------------------------------
-# adls_url = []
-# image_url = []
+adls_urls = []
+pdf_urls = []
 
 if "image_urls" not in st.session_state:
     st.session_state.image_urls = []
@@ -390,7 +424,7 @@ if st.button("Upload Files"):
 
                     st.session_state.pdf_urls.append(pdf_url)
 
-                    st.success("PDF uploaded to ADLS ✅")
+                    st.success("PDF uploaded to ADLS")
                     st.code(pdf_url)
 
                 else:
@@ -403,33 +437,6 @@ if st.button("Upload Files"):
                     st.success("Image uploaded successfully!")
                     st.image(img_url, width=200)
 
-
-# if st.button("Upload Files"):
-#     if not uploaded_files:
-#         st.warning("Please select files first.")
-#     else:
-#         with st.spinner("Uploading..."):
-#             for file in uploaded_files:
-#                 if file.name.lower().endswith(".pdf"):
-#                     reader = PdfReader(file)
-#                     for page in reader.pages:
-#                         st.session_state.extracted_text += (page.extract_text() or "") + "\n"
-
-#                     adls_path = f"uploads/pdfs/{file.name}"
-#                     adls_url.append(upload_to_adls(file, adls_path))
-#                     st.session_state.pdf_urls.append(adls_url)
-
-#                     st.success("PDF uploaded to ADLS ✅")
-#                     st.code(adls_url)
-
-#                 else:
-#                     image_url.append(asyncio.run(
-#                         upload_image_to_cloudinary_async(file)
-#                     ))
-#                     st.session_state.image_urls.append(image_url)
-
-#                     st.success("Image uploaded successfully!")
-#                     st.image(image_url, width=200)
 
 # ======================================================
 # AI ANALYSIS
@@ -466,15 +473,6 @@ col1, col2 = st.columns([3, 1])
 with col1:
     if st.button("Generate Cost Estimate with AI", type="primary", use_container_width=True):
         with st.spinner("Analyzing and estimating..."):
-            # payload = payload_setter(
-            #     image_url,
-            #     adls_url,
-            #     client_name,
-            #     use_case_name,
-            #     markets,
-            #     prompt_input,
-            #     annual_budget
-            # )
             payload = payload_setter(
                 image_uris=st.session_state.image_urls,
                 file_uris=st.session_state.pdf_urls,
@@ -493,9 +491,34 @@ with col1:
 
             st.session_state.gdrive_link = gdrive_link
 
-with col2:
-    if st.button("Test LLM", use_container_width=True):
-        st.success("LLM Connected" if query_llm("connection success") else "LLM Failed")
+
+# if st.button("Generate Cost Estimate with AI",type="primary",use_container_width=True):
+#      with st.spinner("Analyzing and estimating..."):
+#                  payload = payload_setter(
+#                      image_uris=st.session_state.image_urls,
+#                      file_uris=st.session_state.pdf_urls,
+#                      client_name=client_name,
+#                      use_case_name=use_case_name,
+#                      markets=markets,
+#                      user_prompt=prompt_input,
+#                      budget=annual_budget
+#                     )
+                 
+#                     try:
+#                        gdrive_link = run_job_and_get_gdrive_link(payload)
+#                     except Exception as e:
+#                         st.error(f"Cost estimation failed: {str(e)}")
+#                         st.stop()
+
+#                     st.session_state.gdrive_link = gdrive_link
+
+                 
+                 
+
+
+
+
+
 
 if st.session_state.gdrive_link:
     st.markdown("---")

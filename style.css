@@ -7,6 +7,7 @@
     --sigmoid-red: #D7263D;
     --sigmoid-dark: #0f1720;
     --background-color: #ffffff;
+    --databricks-red: #FF3621;
     --card-background: #ffffff;
     --text-color: #1f2933;
     --muted-text: #6b7280;
@@ -87,6 +88,11 @@ section[data-testid="stSidebar"][aria-expanded="true"]
 section[data-testid="stSidebar"][aria-expanded="true"]
 ~ div .fixed-branding {
     left: 320px;
+}
+
+.db-red {
+    color: var(--databricks-red);
+    font-weight: 700;
 }
 
 /* =========================================================
@@ -195,6 +201,11 @@ button[data-testid="baseButton-primary"] {
     padding: 12px 18px;
     box-shadow: 0 6px 14px rgba(215, 38, 61, 0.25);
     transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
 }
 
 button[data-testid="baseButton-primary"]:hover {
