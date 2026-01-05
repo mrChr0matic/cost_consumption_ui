@@ -189,38 +189,45 @@ h3 {
     max-width: 100%;
 }
 
-/* =========================================================
-   PRIMARY BUTTONS
-========================================================= */
-button[data-testid="baseButton-primary"] {
-    background-color: var(--sigmoid-red) !important;
-    color: #ffffff !important;
-    font-family: "Montserrat", sans-serif;
-    font-weight: 700;
-    border-radius: 10px;
-    padding: 12px 18px;
-    box-shadow: 0 6px 14px rgba(215, 38, 61, 0.25);
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
 
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-}
+   //div.stButton > button {
+       //background-color: #D7263D !important; /* same as Consumption Estimate title */
+           /* color: #ffffff !important;
+               font-family: "Montserrat", sans-serif;
+                   font-weight: 700; */
+                       /* border-radius: 10px;
+                           padding: 10px 16px;
+                           min-height: 44px;
 
-button[data-testid="baseButton-primary"]:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 10px 20px rgba(215, 38, 61, 0.35);
-}
+                               box-shadow: 0 6px 14px rgba(215, 38, 61, 0.25);
+                                   width: 100%;
+                                       border: none !important;
+                                       } */
+
+                                       /* div.stButton > button:hover {
+                                           background-color: #D7263D !important;
+                                               box-shadow: 0 10px 20px rgba(215, 38, 61, 0.35);
+                                               }  */
+                                               
 
 /* =========================================================
    ALERTS / INFO
 ========================================================= */
-[data-testid="stAlert"] div[role="alert"] {
+/* [data-testid="stAlert"] div[role="alert"] {
     background-color: #fef2f2;
     color: var(--sigmoid-red);
     border-left: 5px solid var(--sigmoid-red);
-}
+} */
+
+
+div[data-testid="stAlert"][data-alert-type="info"] {
+        background-color: #fef2f2 !important;
+            border-left: 5px solid #D7263D !important;
+            }
+
+            div[data-testid="stAlert"][data-alert-type="info"] * {
+                color: #7f1d1d !important;
+                }
 
 /* =========================================================
    TEXT AREA / JSON
@@ -241,3 +248,48 @@ button[data-testid="baseButton-primary"]:hover {
     font-family: "Montserrat", sans-serif;
     color: var(--sigmoid-dark);
 }
+
+
+
+
+/* Match button color with "Consumption Estimate Calculator" title */
+button[data-testid="baseButton-primary"] {
+background-color: #D7263D !important; /* same as --sigmoid-red */
+color: #ffffff !important;
+     border: none !important;
+            }
+button[data-testid="baseButton-primary"]:hover {
+                background-color: #C21F34 !important;
+                }
+
+
+
+
+
+/* Databricks Apps – force Streamlit buttons full width */
+/* div[data-testid="stButton"] {
+    display: block !important;
+        width: 100% !important;
+        }
+
+        div[data-testid="stButton"] > div {
+            width: 100% !important;
+            }
+
+            div[data-testid="stButton"] button {
+                width: 100% !important;
+                    min-width: 100% !important;
+                    } */
+
+
+/* =========================================================
+   INFO ALERT – MATCH SIGMOID LIGHT RED
+   ========================================================= */
+   [data-testid="stAlert"][data-alert-type="info"] div[role="alert"] {
+       background-color: #fef2f2 !important;   /* light red */
+           color: #7f1d1d !important;
+               border-left: 5px solid #D7263D !important;
+               }
+
+
+

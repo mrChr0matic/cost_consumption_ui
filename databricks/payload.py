@@ -7,6 +7,7 @@ def payload_setter(
     client_name: str,
     use_case_name: str,
     markets: List[dict],
+    global_consumption_multiplier: float,
     user_prompt: Optional[str],
     budget: Optional[float]
 ) -> dict:
@@ -23,6 +24,7 @@ def payload_setter(
         "client_name": client_name,
         "use_case_name": use_case_name,
         "markets": markets,
+        "global_consumption_multiplier": global_consumption_multiplier,
         "user_prompt": user_prompt,
         "budget": budget,
     }
