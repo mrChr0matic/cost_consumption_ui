@@ -653,9 +653,9 @@ if st.button(
 ):
     with st.spinner("Generating professional summary using AI..."):
         try:
+            # GLOBAL CONSUMPTION MULTIPLIER:
+            # {st.session_state.get("global_consumption_multiplier")}
             st.session_state.raw_prompt = f"""
-                                            GLOBAL CONSUMPTION MULTIPLIER:
-                                            {st.session_state.get("global_consumption_multiplier")}
                                             DATA MIGRATION:
                                             {st.session_state.data_migration_store}
 
@@ -667,13 +667,21 @@ if st.button(
 
                                             GEN AI: 
                                             {st.session_state.llm_store}
-
-                                            Summary:
-                                            {st.session_state.summary}
                                         """.strip()
+# Summary:
+# {st.session_state.summary}
             llm_summary = summarize_user_prompt(
                 st.session_state.raw_prompt
             )
+
+            # testing
+            # st.write("DEBUG — LLM Generated Summary")
+            # st.code(llm_summary)
+
+            # st.write("DEBUG — Extracted Document Summary")
+            # st.code(st.session_state.summary)
+            # testing
+
             st.session_state.final_prompt = llm_summary + "\n \n Summary: \n" + st.session_state.summary
         except Exception as e:
             st.error(f"Summary generation failed: {str(e)}")
@@ -691,6 +699,7 @@ col1, col2 = st.columns([3, 1])
 with col1:
     if st.button("Generate Cost Estimate with AI", type="primary"):
         with st.spinner("Analyzing and estimating..."):
+            clean_prompt = prompt_input.split("Summary:")[0].strip()
             payload = payload_setter(
                 image_uris=st.session_state.image_urls,
                 file_uris=st.session_state.pdf_urls,
@@ -698,7 +707,7 @@ with col1:
                 use_case_name=use_case_name,
                 markets=markets,
                 global_consumption_multiplier=st.session_state["global_consumption_multiplier"],
-                user_prompt=prompt_input,
+                user_prompt=clean_prompt,
                 budget=annual_budget
             )
 
